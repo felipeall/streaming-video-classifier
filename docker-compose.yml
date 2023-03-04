@@ -6,8 +6,6 @@ services:
     hostname: mongodb
     container_name: mongodb
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: Mongo!*123
       MONGO_INITDB_ROOT_DATABASE: mongo
     ports:
       - "27017:27017"
