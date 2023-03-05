@@ -19,12 +19,6 @@ def get_videos_names(folder: str = "videos"):
     return [Path(video).stem for video in videos_paths]
 
 
-def serialize_img(img):
-    _, img_buffer_arr = cv2.imencode(".jpg", img)
-    img_bytes = img_buffer_arr.tobytes()
-    return img_bytes
-
-
 def reset_map(_dict):
     for _key in _dict:
         _dict[_key] = []

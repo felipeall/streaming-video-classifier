@@ -1,5 +1,4 @@
 import concurrent.futures
-import os
 import sys
 import time
 from dataclasses import dataclass
@@ -7,14 +6,11 @@ from pathlib import Path
 
 import cv2
 from confluent_kafka import Producer
-from dotenv import load_dotenv
 
 sys.path.append(".")
 from src.utils.config import config_loader
 from src.utils.logging import log_delivery_message
-from src.utils.utils import get_videos_paths, serialize_img
-
-load_dotenv()
+from src.utils.utils import get_videos_paths
 
 
 @dataclass
@@ -31,24 +27,27 @@ class ProducerThread:
         self.producer.flush()
 
     def publish_frame(self, video_path: str):
-        video_name = Path(video_path).stem
+        video_name = str(Path(video_path).stem)
         video = cv2.VideoCapture(video_path)
-        frame_no = 1
         while video.isOpened():
-            _, frame = video.read()
-            if frame_no % int(os.environ["READ_EVERY_X_FRAME"]) == 0:
-                frame_bytes = serialize_img(frame)
-                self.producer.produce(
-                    topic=os.environ["TOPIC_NAME"],
-                    value=frame_bytes,
-                    on_delivery=log_delivery_message,
-                    timestamp=frame_no,
-                    headers={"video_name": str.encode(video_name)},
-                )
-                self.producer.poll(0)
-            time.sleep(0.1)
-            frame_no += 1
+            success, frame = video.read()
+
+            if not success:
+                raise SystemExit(f"Invalid video file: {video_path}")
+
+            _, buffer = cv2.imencode(".jpg", frame)
+
+            self.producer.produce(
+                topic="streaming-video-processing",
+                value=buffer.tobytes(),
+                on_delivery=log_delivery_message,
+                headers={"video_name": video_name},
+            )
+            self.producer.poll(0)
+            time.sleep(0.2)
+
         video.release()
+        print(f"Published video: {video_name}")
 
 
 if __name__ == "__main__":
