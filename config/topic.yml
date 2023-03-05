@@ -1,7 +1,1 @@
-admin_client:
-  bootstrap:
-    servers: localhost:9092
-
-topic:
-  replicas: 1
-  partitions: 3
+bootstrap.servers: localhost:9092

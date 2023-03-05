@@ -1,16 +1,20 @@
 import concurrent.futures
+import os
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-import sys
 
 import cv2
 from confluent_kafka import Producer
+from dotenv import load_dotenv
 
 sys.path.append(".")
 from src.utils.config import config_loader
 from src.utils.logging import log_delivery_message
 from src.utils.utils import get_videos_paths, serialize_img
+
+load_dotenv()
 
 
 @dataclass
@@ -32,10 +36,10 @@ class ProducerThread:
         frame_no = 1
         while video.isOpened():
             _, frame = video.read()
-            if frame_no % 3 == 0:
+            if frame_no % int(os.environ["READ_EVERY_X_FRAME"]) == 0:
                 frame_bytes = serialize_img(frame)
                 self.producer.produce(
-                    topic="streaming-video-processing",
+                    topic=os.environ["TOPIC_NAME"],
                     value=frame_bytes,
                     on_delivery=log_delivery_message,
                     timestamp=frame_no,
@@ -49,7 +53,7 @@ class ProducerThread:
 
 if __name__ == "__main__":
     videos_paths = get_videos_paths()
-    config = config_loader("config/producer.yml")
+    config_producer = config_loader("config/producer.yml")
 
-    producer_thread = ProducerThread(config.as_dict())
+    producer_thread = ProducerThread(config_producer.as_dict())
     producer_thread.run(videos_paths)

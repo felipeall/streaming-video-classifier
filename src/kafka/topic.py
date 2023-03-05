@@ -1,17 +1,21 @@
+import os
 import sys
 
 from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.error import KafkaException
+from dotenv import load_dotenv
 
 sys.path.append(".")
 from src.utils.config import config_loader
 
+load_dotenv()
 
-def main():
-    config = config_loader("config/topic.yml")
 
-    topics = [NewTopic("streaming-video-processing", config.topic.partitions, config.topic.replicas)]
-    admin_client = AdminClient({"bootstrap.servers": config.admin_client.bootstrap.servers})
+def run(config: dict):
+    topics = [
+        NewTopic(os.environ["TOPIC_NAME"], int(os.environ["TOPIC_PARTITIONS"]), int(os.environ["TOPIC_REPLICAS"]))
+    ]
+    admin_client = AdminClient(config)
 
     fs = admin_client.create_topics(topics)
 
@@ -28,4 +32,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    config_topic = config_loader("config/topic.yml")
+    run(config_topic.as_dict())

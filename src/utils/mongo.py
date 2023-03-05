@@ -1,10 +1,15 @@
+import os
+
+from dotenv import load_dotenv
 from pymongo import MongoClient
 from pymongo.errors import BulkWriteError
+
+load_dotenv()
 
 
 def connect_mongo_db():
     client = MongoClient("mongodb://localhost:27017")
-    db = client["streaming-video-processing"]
+    db = client[os.environ["TOPIC_NAME"]]
 
     return db
 
@@ -24,7 +29,7 @@ def insert_data_unique(db, videos_map):
         video_collection = db[video]
         try:
             _result = video_collection.insert_many(docs)
-            print("Multiple Documents have been inserted.")
+            print("Bulk inserted documents:")
             for doc_id in _result.inserted_ids:
                 print(doc_id)
             print()
@@ -35,7 +40,5 @@ def insert_data_unique(db, videos_map):
                     continue
                 video_collection.insert_one(doc)
         except Exception as e:
-            print("Error Occurred.")
-            print(e)
-            print(docs)
+            print(f"Error: {e}")
             pass

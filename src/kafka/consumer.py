@@ -1,18 +1,19 @@
+import os
+import sys
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import cv2
 import numpy as np
-import tensorflow as tf
-from confluent_kafka import Consumer, KafkaError, KafkaException
+from confluent_kafka import Consumer, KafkaError
+from dotenv import load_dotenv
 from keras.applications import ResNet50
 from keras.applications.imagenet_utils import decode_predictions
 from keras.applications.resnet import preprocess_input
 from keras.engine.functional import Functional
-from pymongo import MongoClient
 from pymongo.database import Database
-import sys
+
 sys.path.append(".")
 from src.utils.config import config_loader
 from src.utils.mongo import (
@@ -22,15 +23,17 @@ from src.utils.mongo import (
 )
 from src.utils.utils import get_videos_names, reset_map
 
+load_dotenv()
+
 
 @dataclass
 class ConsumerThread:
     config: dict
-    topic: list
     batch_size: int
     model: Functional
     db: Database
-    videos_map: dict
+    videos_mapping: dict
+    topic: list = field(default_factory=lambda: [os.environ["TOPIC_NAME"]])
 
     def run(self, threads):
         for _ in range(threads):
@@ -75,17 +78,19 @@ class ConsumerThread:
                         predictions = self.model.predict(img_array)
                         labels = decode_predictions(predictions)
 
-                        self.videos_map = reset_map(self.videos_map)
+                        self.videos_mapping = reset_map(self.videos_mapping)
                         for metadata, label in zip(metadata_array, labels):
                             top_label = label[0][1]
                             confidence = label[0][2]
                             confidence = confidence.item()
                             frame_no, video_name = metadata
                             doc = {"frame": frame_no, "label": top_label, "confidence": confidence}
-                            self.videos_map[video_name].append(doc)
+                            # print(videos_mapping)
+                            # exit()
+                            self.videos_mapping[video_name].append(doc)
 
                         # insert bulk results into mongodb
-                        insert_data_unique(self.db, self.videos_map)
+                        insert_data_unique(self.db, self.videos_mapping)
 
                         # commit synchronously
                         consumer.commit(asynchronous=False)
@@ -111,8 +116,6 @@ if __name__ == "__main__":
     config_consumer = config_loader("config/consumer.yml")
     config_model = config_loader("config/resnet50.yml")
 
-    topic = ["streaming-video-processing"]
-
     model = ResNet50(
         include_top=config_model.include_top,
         weights=config_model.weights,
@@ -123,8 +126,7 @@ if __name__ == "__main__":
     )
 
     db = connect_mongo_db()
-    videos_names = get_videos_names()
-    videos_map = create_collections_unique(db, videos_names)
+    videos_mapping = create_collections_unique(db, get_videos_names())
 
-    consumer_thread = ConsumerThread(config_consumer.as_dict(), topic, 32, model, db, videos_map)
+    consumer_thread = ConsumerThread(config_consumer.as_dict(), 32, model, db, videos_mapping)
     consumer_thread.run(3)
