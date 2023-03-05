@@ -1,12 +1,13 @@
 import concurrent.futures
-import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
+import sys
 
 import cv2
 from confluent_kafka import Producer
 
+sys.path.append(".")
 from src.utils.config import config_loader
 from src.utils.logging import log_delivery_message
 from src.utils.utils import get_videos_paths, serialize_img

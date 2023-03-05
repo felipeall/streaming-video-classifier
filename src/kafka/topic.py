@@ -1,6 +1,9 @@
+import sys
+
 from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.error import KafkaException
 
+sys.path.append(".")
 from src.utils.config import config_loader
 
 
