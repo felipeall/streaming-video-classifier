@@ -9,9 +9,8 @@ from keras.applications.imagenet_utils import decode_predictions
 from keras.applications.resnet import preprocess_input
 
 sys.path.append(".")
-from src.utils.config import config_loader
 from src.utils.mongo import connect_mongo_db
-from src.utils.utils import check_message_errors
+from src.utils.utils import check_message_errors, load_config_yml
 
 
 @dataclass
@@ -20,23 +19,16 @@ class KafkaConsumer:
     config_model: dict
 
     def __post_init__(self):
+        self.model = ResNet50(**config_model)
+        self.mongo_db = connect_mongo_db()
         self.consumer = Consumer(**self.config_consumer)
         self.consumer.subscribe(["streaming-video-processing"])
-        self.model = ResNet50(
-            include_top=config_model.include_top,
-            weights=config_model.weights,
-            input_tensor=config_model.input_tensor,
-            input_shape=config_model.input_shape,
-            pooling=config_model.pooling,
-            classes=config_model.classes,
-        )
-        self.mongo_db = connect_mongo_db()
 
     def run(self):
         print(f"Watching for messages...")
         try:
             while True:
-                message = self.consumer.poll(3)
+                message = self.consumer.poll(1)
 
                 if check_message_errors(message):
                     continue
@@ -64,7 +56,7 @@ class KafkaConsumer:
 
                 # mongo db
                 db_collection = self.mongo_db[video_name]
-                if db_collection.find_one({"frame": frame_no}) is None:  # no duplicates
+                if db_collection.find_one({"frame": frame_no}) is None:
                     document = {"frame": frame_no, "label": top_label, "confidence": confidence}
                     db_collection.insert_one(document)
                     print(f"[{video_name}] Document added to db! {document}")
@@ -77,8 +69,8 @@ class KafkaConsumer:
 
 
 if __name__ == "__main__":
-    config_consumer = config_loader("config/consumer.yml")
-    config_model = config_loader("config/resnet50.yml")
+    config_consumer = load_config_yml("config/consumer.yml")
+    config_model = load_config_yml("config/resnet50.yml")
 
-    consumer = KafkaConsumer(config_consumer.as_dict(), config_model)
+    consumer = KafkaConsumer(config_consumer, config_model)
     consumer.run()

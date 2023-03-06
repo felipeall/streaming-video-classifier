@@ -5,16 +5,16 @@ from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.error import KafkaException
 
 sys.path.append(".")
-from src.utils.config import Config, config_loader
+from utils.utils import load_config_yml
 
 
 @dataclass
 class Topic:
-    config_topic: Config
+    config_topic: dict
     config_admin_client: dict
 
     def run(self):
-        topics = [NewTopic("streaming-video-processing", config_topic.partitions, config_topic.replicas)]
+        topics = [NewTopic("streaming-video-processing", config_topic.get("partitions"), config_topic.get("replicas"))]
         admin_client = AdminClient(self.config_admin_client)
 
         fs = admin_client.create_topics(topics)
@@ -32,8 +32,8 @@ class Topic:
 
 
 if __name__ == "__main__":
-    config_topic = config_loader("config/topic.yml")
-    config_admin_client = config_loader("config/admin_client.yml")
+    config_topic = load_config_yml("config/topic.yml")
+    config_admin_client = load_config_yml("config/admin_client.yml")
 
-    topic = Topic(config_admin_client.as_dict(), config_topic)
+    topic = Topic(config_topic, config_admin_client)
     topic.run()

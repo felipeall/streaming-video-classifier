@@ -8,25 +8,25 @@ import cv2
 from confluent_kafka import Producer
 
 sys.path.append(".")
-from src.utils.config import config_loader
 from src.utils.logging import log_delivery_message
-from src.utils.utils import get_videos_paths
+from src.utils.utils import get_videos_paths, load_config_yml
 
 
 @dataclass
 class ProducerThread:
     config: dict
+    videos_paths: list
 
     def __post_init__(self):
         self.producer = Producer(self.config)
 
-    def run(self, videos_paths: list):
+    def run(self):
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            executor.map(self.publish_frame, videos_paths)
+            executor.map(self.produce, self.videos_paths)
 
         self.producer.flush()
 
-    def publish_frame(self, video_path: str):
+    def produce(self, video_path: str):
         video_name = str(Path(video_path).stem)
         video = cv2.VideoCapture(video_path)
         while video.isOpened():
@@ -52,7 +52,7 @@ class ProducerThread:
 
 if __name__ == "__main__":
     videos_paths = get_videos_paths()
-    config_producer = config_loader("config/producer.yml")
+    config_producer = load_config_yml("config/producer.yml")
 
-    producer_thread = ProducerThread(config_producer.as_dict())
-    producer_thread.run(videos_paths)
+    producer_thread = ProducerThread(config_producer, videos_paths)
+    producer_thread.run()
