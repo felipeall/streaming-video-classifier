@@ -30,26 +30,30 @@ class ProducerThread:
         video_name = str(Path(video_path).stem)
         video = cv2.VideoCapture(video_path)
         frame_no = 1
-        while video.isOpened():
-            success, frame = video.read()
+        try:
+            while video.isOpened():
+                success, frame = video.read()
 
-            if not success:
-                raise SystemExit(f"Invalid video file: {video_path}")
+                if not success:
+                    raise SystemExit(f"Invalid video file: {video_path}")
 
-            _, buffer = cv2.imencode(".jpg", frame)
+                _, buffer = cv2.imencode(".jpg", frame)
 
-            self.producer.produce(
-                topic="streaming-video-classifier",
-                value=buffer.tobytes(),
-                on_delivery=log_delivery_message,
-                timestamp=frame_no,
-                headers={"video_name": video_name},
-            )
-            self.producer.poll(0)
-            time.sleep(0.2)
-            frame_no += 1
-
-        video.release()
+                self.producer.produce(
+                    topic="streaming-video-classifier",
+                    value=buffer.tobytes(),
+                    on_delivery=log_delivery_message,
+                    timestamp=frame_no,
+                    headers={"video_name": video_name},
+                )
+                self.producer.poll(0)
+                time.sleep(0.2)
+                frame_no += 1
+        except Exception as e:
+            print(f"Error! {e}")
+            raise
+        finally:
+            video.release()
         print(f"Published video: {video_name}")
 
 
