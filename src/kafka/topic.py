@@ -5,7 +5,7 @@ from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.error import KafkaException
 
 sys.path.append(".")
-from utils.utils import load_config_yml
+from src.utils.utils import load_config_yml
 
 
 @dataclass
