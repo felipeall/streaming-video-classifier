@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: video-producer
+  name: video-producer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: video-producer
+  template:
+    metadata:
+      labels:
+        app: video-producer
+    spec:
+      containers:
+      - image: video-producer:latest
+        imagePullPolicy: IfNotPresent
+        name: video-producer

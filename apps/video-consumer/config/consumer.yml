@@ -1,0 +1,5 @@
+bootstrap.servers: kafka-broker-service:29092
+group.id: kafka-multi-video-stream
+enable.auto.commit: True
+auto.offset.reset: earliest
+auto.commit.interval.ms: 500

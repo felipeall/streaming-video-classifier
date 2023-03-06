@@ -1,30 +1,39 @@
 # Streaming Video Classifier
+<<<<<<< HEAD
 Kafka project that simulates streaming videos, classifies the frames and stores the predictions in MongoDB
+=======
+Project that demonstrates a Kafka deployment in a local Kubernetes environment that simulates streaming videos and 
+classifies the frames images using a machine learning model
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/): open platform for developing, shipping, and running applications
+- [Minikube](https://minikube.sigs.k8s.io/docs/start/): local Kubernetes, focusing on making it easy to learn and develop
 
 ### Running
 
-Clone the repository
+Start minikube service
 ````bash
-git clone https://github.com/felipeall/streaming-video-classifier.git
+minikube start
 ````
 
-Access the app root folder
+Deploy Zookeeper and Kafka Broker
 ````bash
-cd streaming-video-classifier
+kubectl apply -f kubernetes/zookeeper.yaml
+kubectl wait $(kubectl get pods -o name) --for=condition=Ready --timeout=600s
+kubectl apply -f kubernetes/kafka-broker.yaml
 ````
 
-Instantiate the Docker containers (Zookeeper, Kafka and MongoDB)
+Build and deploy Video Consumer
 ````bash
-docker compose up -d
+docker build -t video-consumer -f apps/video-consumer/Dockerfile apps/video-consumer
+minikube image load video-consumer
+kubectl apply -f kubernetes/video-consumer.yaml
 ````
 
-Create Kafka Topic
+Build and deploy Video Producer
 ````bash
-make topic
-````
-
-Run Kafka Producer and Consumer
-````bash
-make producer
-make consumer
+docker build -t video-producer -f apps/video-producer/Dockerfile apps/video-producer
+minikube image load video-producer
+kubectl apply -f kubernetes/video-producer.yaml
 ````

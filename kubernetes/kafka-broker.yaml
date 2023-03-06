@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kafka-broker-service
+  name: kafka-broker-service
+spec:
+  ports:
+  - name: kafka-internal-port
+    port: 29092
+    targetPort: 29092
+  - name: kafka-internal-broker-port
+    port: 9092
+    targetPort: 9092
+  - name: kafka-external-port
+    port: 9093
+    targetPort: 9093
+  selector:
+    app: kafka-broker
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kafka-broker
+  name: kafka-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-broker
+  template:
+    metadata:
+      labels:
+        app: kafka-broker
+    spec:
+      hostname: kafka-broker
+      containers:
+      - env:
+        - name: KAFKA_BROKER_ID
+          value: "1"
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          value: zookeeper-service:2181
+        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP 
+          value: INTERNAL:PLAINTEXT,INTERNAL_BROKER:PLAINTEXT,EXTERNAL:PLAINTEXT
+        - name: KAFKA_LISTENERS
+          value: INTERNAL://:29092,INTERNAL_BROKER://:9092,EXTERNAL://:9093
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: INTERNAL://kafka-broker-service:29092,INTERNAL_BROKER://localhost:9092,EXTERNAL://localhost:9093
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value: "1"
+        - name: KAFKA_INTER_BROKER_LISTENER_NAME
+          value: INTERNAL_BROKER
+        - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+          value: "1"
+        - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+          value: "1"
+        image: confluentinc/cp-kafka:7.1.3.arm64
+        imagePullPolicy: IfNotPresent
+        name: kafka-broker
+        ports:
+        - containerPort: 29092
+        - containerPort: 9092
+        - containerPort: 9093
