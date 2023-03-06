@@ -19,7 +19,7 @@ class KafkaConsumer:
     config_model: dict
 
     def __post_init__(self):
-        self.model = ResNet50(**config_model)
+        self.model = ResNet50(**self.config_model)
         self.mongo_db = connect_mongo_db()
         self.consumer = Consumer(**self.config_consumer)
         self.consumer.subscribe(["streaming-video-classifier"])
