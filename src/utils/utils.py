@@ -1,8 +1,6 @@
 import glob
 from pathlib import Path
 
-import cv2
-
 
 def get_videos_paths(folder: str = "videos", extensions: tuple = ("avi", "mp4", "webm")):
     videos_paths = [file for file in glob.glob(f"{folder}/**", recursive=True) if file.split(".")[-1] in extensions]
@@ -19,7 +17,14 @@ def get_videos_names(folder: str = "videos"):
     return [Path(video).stem for video in videos_paths]
 
 
-def reset_map(_dict):
-    for _key in _dict:
-        _dict[_key] = []
-    return _dict
+def check_message_errors(msg):
+
+    if msg is None:
+        print("No messages to consume")
+        return True
+    if msg.error() is not None:
+        print(f"Message error: {msg.error()}")
+        return True
+    else:
+        return False
+

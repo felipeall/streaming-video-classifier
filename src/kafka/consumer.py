@@ -1,132 +1,85 @@
-import os
 import sys
-import threading
-import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import cv2
 import numpy as np
-from confluent_kafka import Consumer, KafkaError
-from dotenv import load_dotenv
+from confluent_kafka import Consumer
 from keras.applications import ResNet50
 from keras.applications.imagenet_utils import decode_predictions
 from keras.applications.resnet import preprocess_input
-from keras.engine.functional import Functional
-from pymongo.database import Database
+
 
 sys.path.append(".")
+from src.utils.utils import check_message_errors
 from src.utils.config import config_loader
-from src.utils.mongo import (
-    connect_mongo_db,
-    create_collections_unique,
-    insert_data_unique,
-)
-from src.utils.utils import get_videos_names, reset_map
-
-load_dotenv()
+from src.utils.mongo import connect_mongo_db
 
 
 @dataclass
-class ConsumerThread:
-    config: dict
-    batch_size: int
-    model: Functional
-    db: Database
-    videos_mapping: dict
-    topic: list = field(default_factory=lambda: [os.environ["TOPIC_NAME"]])
+class KafkaConsumer:
+    config_consumer: dict
+    config_model: dict
 
-    def run(self, threads):
-        for _ in range(threads):
-            t = threading.Thread(target=self.read_data)
-            t.daemon = True
-            t.start()
-            while True:
-                time.sleep(10)
+    def __post_init__(self):
+        self.consumer = Consumer(**self.config_consumer)
+        self.consumer.subscribe(["streaming-video-processing"])
+        self.model = ResNet50(
+            include_top=config_model.include_top,
+            weights=config_model.weights,
+            input_tensor=config_model.input_tensor,
+            input_shape=config_model.input_shape,
+            pooling=config_model.pooling,
+            classes=config_model.classes,
+        )
+        self.mongo_db = connect_mongo_db()
 
-    def read_data(self):
-        consumer = Consumer(self.config)
-        consumer.subscribe(self.topic)
-        self.execute(consumer, 0, [], [])
-
-    def execute(self, consumer, msg_count, msg_array, metadata_array):
+    def run(self):
+        print(f"Watching for messages...")
         try:
             while True:
-                msg = consumer.poll(0.5)
-                if msg is None:
+                message = self.consumer.poll(3)
+
+                if check_message_errors(message):
                     continue
-                elif msg.error() is None:
-                    # convert image bytes data to numpy array of dtype uint8
-                    nparr = np.frombuffer(msg.value(), np.uint8)
 
-                    # decode image
-                    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                    img = cv2.resize(img, (224, 224))
-                    msg_array.append(img)
+                # get metadata
+                frame_no = str(message.timestamp()[1])
+                video_name = message.headers()[0][1].decode("utf-8")
 
-                    # get metadata
-                    frame_no = msg.timestamp()[1]
-                    video_name = msg.headers()[0][1].decode("utf-8")
+                # decode image
+                image_msg = np.frombuffer(message.value(), np.uint8)
+                image = cv2.imdecode(image_msg, cv2.IMREAD_COLOR)
+                image = cv2.resize(image, (224, 224))
 
-                    metadata_array.append((frame_no, video_name))
+                # pre process
+                image = np.asarray([image])
+                image = preprocess_input(image)
 
-                    # bulk process
-                    msg_count += 1
-                    if msg_count % self.batch_size == 0:
-                        # predict on batch
-                        img_array = np.asarray(msg_array)
-                        img_array = preprocess_input(img_array)
-                        predictions = self.model.predict(img_array)
-                        labels = decode_predictions(predictions)
+                # run model
+                prediction = self.model.predict(image)
+                label = decode_predictions(prediction)
 
-                        self.videos_mapping = reset_map(self.videos_mapping)
-                        for metadata, label in zip(metadata_array, labels):
-                            top_label = label[0][1]
-                            confidence = label[0][2]
-                            confidence = confidence.item()
-                            frame_no, video_name = metadata
-                            doc = {"frame": frame_no, "label": top_label, "confidence": confidence}
-                            # print(videos_mapping)
-                            # exit()
-                            self.videos_mapping[video_name].append(doc)
+                # get results
+                top_label = str(label[0][0][1])
+                confidence = float(label[0][0][2])
 
-                        # insert bulk results into mongodb
-                        insert_data_unique(self.db, self.videos_mapping)
-
-                        # commit synchronously
-                        consumer.commit(asynchronous=False)
-                        # reset the parameters
-                        msg_count = 0
-                        metadata_array = []
-                        msg_array = []
-
-                elif msg.error().code() == KafkaError._PARTITION_EOF:
-                    print(f"End of partition reached {msg.topic()}/{msg.partition()}")
+                # mongo db
+                db_collection = self.mongo_db[video_name]
+                if db_collection.find_one({"frame": frame_no}) is None:  # no duplicates
+                    document = {"frame": frame_no, "label": top_label, "confidence": confidence}
+                    db_collection.insert_one(document)
+                    print(f"[{video_name}] Document added to db! {document}")
                 else:
-                    print(f"Error occurred: {msg.error().str()}")
-
-        except KeyboardInterrupt:
-            print("Interrupted by user. Exiting...")
-            pass
+                    print(f"[{video_name}] Frame already exists in db: {frame_no}")
+                    continue
 
         finally:
-            consumer.close()
+            self.consumer.close()
 
 
 if __name__ == "__main__":
     config_consumer = config_loader("config/consumer.yml")
     config_model = config_loader("config/resnet50.yml")
 
-    model = ResNet50(
-        include_top=config_model.include_top,
-        weights=config_model.weights,
-        input_tensor=config_model.input_tensor,
-        input_shape=config_model.input_shape,
-        pooling=config_model.pooling,
-        classes=config_model.classes,
-    )
-
-    db = connect_mongo_db()
-    videos_mapping = create_collections_unique(db, get_videos_names())
-
-    consumer_thread = ConsumerThread(config_consumer.as_dict(), 32, model, db, videos_mapping)
-    consumer_thread.run(3)
+    consumer = KafkaConsumer(config_consumer.as_dict(), config_model)
+    consumer.run()
