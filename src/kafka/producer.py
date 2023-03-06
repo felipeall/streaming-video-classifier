@@ -29,6 +29,7 @@ class ProducerThread:
     def produce(self, video_path: str):
         video_name = str(Path(video_path).stem)
         video = cv2.VideoCapture(video_path)
+        frame_no = 1
         while video.isOpened():
             success, frame = video.read()
 
@@ -41,10 +42,12 @@ class ProducerThread:
                 topic="streaming-video-classifier",
                 value=buffer.tobytes(),
                 on_delivery=log_delivery_message,
+                timestamp=frame_no,
                 headers={"video_name": video_name},
             )
             self.producer.poll(0)
             time.sleep(0.2)
+            frame_no += 1
 
         video.release()
         print(f"Published video: {video_name}")
