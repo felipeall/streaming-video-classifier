@@ -8,11 +8,10 @@ from keras.applications import ResNet50
 from keras.applications.imagenet_utils import decode_predictions
 from keras.applications.resnet import preprocess_input
 
-
 sys.path.append(".")
-from src.utils.utils import check_message_errors
 from src.utils.config import config_loader
 from src.utils.mongo import connect_mongo_db
+from src.utils.utils import check_message_errors
 
 
 @dataclass

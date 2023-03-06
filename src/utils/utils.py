@@ -18,7 +18,6 @@ def get_videos_names(folder: str = "videos"):
 
 
 def check_message_errors(msg):
-
     if msg is None:
         print("No messages to consume")
         return True
@@ -27,4 +26,3 @@ def check_message_errors(msg):
         return True
     else:
         return False
-

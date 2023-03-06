@@ -1,1 +1,2 @@
-bootstrap.servers: localhost:9092
+replicas: 1
+partitions: 1
