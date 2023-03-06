@@ -22,7 +22,7 @@ class KafkaConsumer:
         self.model = ResNet50(**config_model)
         self.mongo_db = connect_mongo_db()
         self.consumer = Consumer(**self.config_consumer)
-        self.consumer.subscribe(["streaming-video-processing"])
+        self.consumer.subscribe(["streaming-video-classifier"])
 
     def run(self):
         print(f"Watching for messages...")

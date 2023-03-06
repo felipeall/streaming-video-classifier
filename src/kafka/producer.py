@@ -38,7 +38,7 @@ class ProducerThread:
             _, buffer = cv2.imencode(".jpg", frame)
 
             self.producer.produce(
-                topic="streaming-video-processing",
+                topic="streaming-video-classifier",
                 value=buffer.tobytes(),
                 on_delivery=log_delivery_message,
                 headers={"video_name": video_name},

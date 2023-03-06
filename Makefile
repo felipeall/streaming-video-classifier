@@ -11,4 +11,4 @@ terminal:
 	docker exec -it kafka bash
 
 topic-count:
-	docker exec -it kafka kafka-run-class kafka.tools.GetOffsetShell  --broker-list localhost:9092 --topic streaming-video-processing
+	docker exec -it kafka kafka-run-class kafka.tools.GetOffsetShell  --broker-list localhost:9092 --topic streaming-video-classifier

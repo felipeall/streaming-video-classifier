@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "streaming-video-processing"
+name = "streaming-video-classifier"
 version = "0.1.0"
 description = ""
 authors = ["Felipe Allegretti <felipe@allegretti.me>"]

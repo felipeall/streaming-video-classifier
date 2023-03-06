@@ -14,7 +14,7 @@ class Topic:
     config_admin_client: dict
 
     def run(self):
-        topics = [NewTopic("streaming-video-processing", config_topic.get("partitions"), config_topic.get("replicas"))]
+        topics = [NewTopic("streaming-video-classifier", config_topic.get("partitions"), config_topic.get("replicas"))]
         admin_client = AdminClient(self.config_admin_client)
 
         fs = admin_client.create_topics(topics)

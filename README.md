@@ -1,1 +1,1 @@
-# streaming-video-processing
+# streaming-video-classifier
