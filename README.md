@@ -1,6 +1,5 @@
 # Streaming Video Classifier
-Kafka project that simulates streaming videos and classifies the frames using [ResNet-50](https://www.tensorflow.org/api_docs/python/tf/keras/applications/resnet50/ResNet50) model
-
+Kafka project that simulates streaming videos, classifies the frames and stores the predictions in MongoDB
 
 ### Running
 

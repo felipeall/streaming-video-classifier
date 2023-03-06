@@ -64,6 +64,14 @@ class KafkaConsumer:
                     print(f"[{video_name}] Frame already exists in db: {frame_no}")
                     continue
 
+        except KeyboardInterrupt:
+            print("Interrupted by the user! Exiting Consumer...")
+            pass
+
+        except Exception as e:
+            print(f"Error! {e}")
+            raise
+
         finally:
             self.consumer.close()
 

@@ -49,11 +49,14 @@ class ProducerThread:
                 self.producer.poll(0)
                 time.sleep(0.2)
                 frame_no += 1
+
         except Exception as e:
             print(f"Error! {e}")
             raise
+
         finally:
             video.release()
+
         print(f"Published video: {video_name}")
 
 
