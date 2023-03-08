@@ -49,6 +49,8 @@ producer:
 	@echo "##### Video Producer OK! #####"
 
 mongodb-local:
+	@echo "Forwarding MongoDB port 27017..."
+	@echo "Please don't close this terminal!"
 	kubectl port-forward service/mongodb-service 27017:27017
 
 run: minikube zookeeper kafka mongodb consumer producer
