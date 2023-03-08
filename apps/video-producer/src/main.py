@@ -1,4 +1,5 @@
 import concurrent.futures
+import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -7,14 +8,32 @@ import cv2
 from confluent_kafka import Producer
 from utils import get_videos_paths, load_config_yml, log_delivery_message
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
 
 @dataclass
-class ProducerThread:
-    config: dict
+class KafkaProducer:
+    config_producer: dict
     videos_paths: list
 
     def __post_init__(self):
-        self.producer = Producer(self.config)
+        self._create_producer()
+
+    def _create_producer(self):
+        try:
+            logging.info(f"Connecting to Kafka server...")
+            logging.info(f"Kafka Producer config: {self.config_producer}")
+            self.producer = Producer(self.config_producer)
+            logging.info(f"Connected to Kafka Server @ {self.config_producer.get('bootstrap.servers')}")
+        except Exception as e:
+            logging.exception(
+                f"Error connecting to Kafka Server @ {self.config_producer.get('bootstrap.servers')} ({e})"
+            )
+            raise
 
     def run(self):
         with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -23,6 +42,7 @@ class ProducerThread:
         self.producer.flush()
 
     def produce(self, video_path: str):
+        logging.info(f"Processing video: {video_path} ...")
         video_name = str(Path(video_path).stem)
         video = cv2.VideoCapture(video_path)
         frame_no = 1
@@ -31,6 +51,7 @@ class ProducerThread:
                 success, frame = video.read()
 
                 if not success:
+                    logging.exception(f"Invalid video file: {video_path}")
                     raise SystemExit(f"Invalid video file: {video_path}")
 
                 _, buffer = cv2.imencode(".jpg", frame)
@@ -47,18 +68,19 @@ class ProducerThread:
                 frame_no += 1
 
         except Exception as e:
-            print(f"Error! {e}")
+            logging.exception(f"Error producing message frames for video: {video_name} ({e})")
             raise
 
         finally:
             video.release()
 
-        print(f"Published video: {video_name}")
+        logging.info(f"Finished producing message frames for video: {video_name}")
 
 
 if __name__ == "__main__":
+    logging.info("Starting Kafka Producer...")
     videos_paths = get_videos_paths(folder="videos")
     config_producer = load_config_yml(file="config/producer.yml")
 
-    producer_thread = ProducerThread(config_producer, videos_paths)
+    producer_thread = KafkaProducer(config_producer, videos_paths)
     producer_thread.run()

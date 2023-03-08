@@ -6,7 +6,7 @@ import yaml
 
 logging.basicConfig(
     level=logging.INFO,
-    format="[%(asctime)s] %(message)s",
+    format="[%(asctime)s] [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
@@ -36,6 +36,7 @@ def load_config_yml(file: str) -> dict:
         else:
             config_parsed[k] = v
 
+    logging.info(f"Loaded config file: {file}")
     return config_parsed
 
 
@@ -43,6 +44,8 @@ def get_videos_paths(folder: str, extensions: tuple = ("avi", "mp4", "webm")):
     videos_paths = [file for file in glob.glob(f"{folder}/**", recursive=True) if file.split(".")[-1] in extensions]
 
     if not videos_paths:
+        logging.exception(f"No videos files found in folder: {folder}")
         raise FileNotFoundError(f"No videos files found in folder: {folder}")
 
+    logging.info(f"Videos files identified: {videos_paths}")
     return videos_paths
