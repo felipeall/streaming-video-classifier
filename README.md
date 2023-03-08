@@ -25,7 +25,7 @@ classifies the frames images using a machine learning model and uploads the pred
 
 2. Put videos files in the following folder:
     ````bash
-    streaming-video-classifier\apps\video-producer\videos
+    streaming-video-classifier/apps/video-producer/videos
     ````
     Supported formats are: `avi`, `mp4` and `webm`
 
@@ -65,11 +65,11 @@ _tl;dr: `make run`_
 
 ### Validation
 
-In order to check the output, one can enable MongoDB port forwarding:
+In order to check the output, enable MongoDB port forwarding:
 
 ````bash
-kubectl port-forward service/mongodb-service 27017:27017
+make mongodb-local
 ````
 
-And connect to the database via localhost:
+And connect to the database locally via:
 > mongodb://localhost:27017
