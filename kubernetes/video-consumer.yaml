@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: video-consumer
+  name: video-consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: video-consumer
+  template:
+    metadata:
+      labels:
+        app: video-consumer
+    spec:
+      containers:
+      - image: video-consumer:latest
+        imagePullPolicy: IfNotPresent
+        name: video-consumer

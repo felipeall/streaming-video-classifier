@@ -1,6 +1,0 @@
-include_top: True
-weights: "imagenet"
-input_tensor: None
-input_shape: (224, 224, 3)
-pooling: None
-classes: 1000
