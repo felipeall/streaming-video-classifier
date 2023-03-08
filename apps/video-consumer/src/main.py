@@ -6,7 +6,7 @@ from confluent_kafka import Consumer
 from keras.applications import ResNet50
 from keras.applications.imagenet_utils import decode_predictions
 from keras.applications.resnet import preprocess_input
-
+from pymongo import MongoClient
 from utils import check_message_errors, load_config_yml
 
 
@@ -14,9 +14,12 @@ from utils import check_message_errors, load_config_yml
 class KafkaConsumer:
     config_consumer: dict
     config_model: dict
+    config_mongodb: dict
 
     def __post_init__(self):
         self.model = ResNet50(**self.config_model)
+        self.mongo_client = MongoClient(**self.config_mongodb)
+        self.mongodb = self.mongo_client["streaming-video-classifier"]
         self.consumer = Consumer(**self.config_consumer)
         self.consumer.subscribe(["streaming-video-classifier"])
 
@@ -51,16 +54,14 @@ class KafkaConsumer:
                 confidence = float(label[0][0][2])
 
                 # mongo db
-                document = {"frame": frame_no, "label": top_label, "confidence": confidence}
-                print(f"[{video_name}] Document added to db: {document}")
-
-        except KeyboardInterrupt:
-            print("Interrupted by the user! Exiting Consumer...")
-            pass
-
-        except Exception as e:
-            print(f"Error! {e}")
-            raise
+                db_collection = self.mongodb[video_name]
+                if db_collection.find_one({"frame": frame_no}) is None:
+                    document = {"frame": frame_no, "label": top_label, "confidence": confidence}
+                    db_collection.insert_one(document)
+                    print(f"[{video_name}] Document added to db! {document}")
+                else:
+                    print(f"[{video_name}] Frame already exists in db: {frame_no}")
+                    continue
 
         except KeyboardInterrupt:
             print("Interrupted by the user! Exiting Consumer...")
@@ -77,6 +78,7 @@ class KafkaConsumer:
 if __name__ == "__main__":
     config_consumer = load_config_yml("config/consumer.yml")
     config_model = load_config_yml("config/resnet50.yml")
+    config_mongodb = load_config_yml("config/mongodb.yml")
 
-    consumer = KafkaConsumer(config_consumer, config_model)
+    consumer = KafkaConsumer(config_consumer, config_model, config_mongodb)
     consumer.run()

@@ -5,7 +5,6 @@ from pathlib import Path
 
 import cv2
 from confluent_kafka import Producer
-
 from utils import get_videos_paths, load_config_yml, log_delivery_message
 
 

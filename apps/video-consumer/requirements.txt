@@ -2,3 +2,4 @@ confluent-kafka==2.0.2
 pyyaml==6.0
 opencv-python-headless==4.7.0.72
 tensorflow==2.11.0
+pymongo==4.3.3
