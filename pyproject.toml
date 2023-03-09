@@ -8,9 +8,9 @@ authors = ["Felipe Allegretti <felipe@allegretti.me>"]
 python = ">=3.9,<3.12"
 confluent-kafka = "2.0.2"
 pymongo = "4.3.3"
-opencv-python = "4.7.0.72"
 tensorflow = "2.11.0"
 pyyaml = "6.0"
+opencv-contrib-python = "^4.7.0.72"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
