@@ -12,7 +12,7 @@ zookeeper:
 	@echo "####################################"
 	kubectl apply -f kubernetes/zookeeper.yaml
 	@echo "Waiting for 'Ready' condition..."
-	kubectl wait $$(kubectl get pods -o name) --for=condition=Ready --timeout=600s
+	@kubectl wait --for=condition=Ready --timeout=600s pod --all
 	@echo "##### Kafka Zookeeper OK! #####"
 
 kafka:
@@ -20,7 +20,8 @@ kafka:
 	@echo "##### Starting Kafka Broker #####"
 	@echo "#################################"
 	kubectl apply -f kubernetes/kafka-broker.yaml
-	kubectl wait $$(kubectl get pods -o name) --for=condition=Ready --timeout=600s
+	@echo "Waiting for 'Ready' condition..."
+	@kubectl wait --for=condition=Ready --timeout=600s pod --all
 	@echo "##### Kafka Broker OK! #####"
 
 mongodb:
@@ -53,4 +54,11 @@ mongodb-local:
 	@echo "Please don't close this terminal!"
 	kubectl port-forward service/mongodb-service 27017:27017
 
+kafka-local:
+	@echo "Forwarding Kafka Broker port 9093..."
+	@echo "Please don't close this terminal!"
+	kubectl port-forward service/kafka-broker-service 9093:9093
+
 run: minikube zookeeper kafka mongodb consumer producer
+run-kafka: minikube zookeeper kafka
+run-producer: minikube zookeeper producer
