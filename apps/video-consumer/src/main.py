@@ -92,6 +92,7 @@ class KafkaConsumer:
                 # get metadata
                 frame_no = int(message.timestamp()[1])
                 video_name = message.headers()[0][1].decode("utf-8")
+                video_timestamp_sec = float(message.headers()[1][1].decode("utf-8")) / 1000
 
                 # decode image
                 image_msg = np.frombuffer(message.value(), np.uint8)
@@ -113,7 +114,7 @@ class KafkaConsumer:
                 # mongo db
                 db_collection = self.mongodb[video_name]
                 if db_collection.find_one({"frame": frame_no}) is None:
-                    document = {"frame": frame_no, "label": top_label, "confidence": confidence}
+                    document = {"frame": frame_no, "timestamp": video_timestamp_sec, "label": top_label, "confidence": confidence}
                     db_collection.insert_one(document)
                     logging.info(f"[{video_name}] Frame label added to database: {document}")
                 else:

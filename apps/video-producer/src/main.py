@@ -67,7 +67,7 @@ class KafkaProducer:
             raise SystemExit(f"Error opening video: {video_path}")
 
         fps = int(video.get(cv2.CAP_PROP_FPS))
-        frame_no = 1
+        frame_no = 0
         try:
             while video.isOpened():
                 success, frame = video.read()
@@ -76,6 +76,7 @@ class KafkaProducer:
                     logging.exception(f"Invalid video file: {video_path}")
                     raise SystemExit(f"Invalid video file: {video_path}")
 
+                frame_no += 1
                 if frame_no % fps == 0:  # extract frame every 1 second
 
                     _, buffer = cv2.imencode(".jpg", frame)
@@ -85,12 +86,10 @@ class KafkaProducer:
                         value=buffer.tobytes(),
                         on_delivery=log_delivery_message,
                         timestamp=frame_no,
-                        headers={"video_name": video_name},
+                        headers={"video_name": video_name, "frame_timestamp_ms": str(video.get(cv2.CAP_PROP_POS_MSEC))},
                     )
-
                 self.producer.poll(0)
                 time.sleep(0.2)
-                frame_no += 1
 
         except KeyboardInterrupt:
             print("Interrupted by the user! Exiting Kafka Producer...")
