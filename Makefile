@@ -29,6 +29,7 @@ mongodb:
 	@echo "##### Starting MongoDB #####"
 	@echo "############################"
 	kubectl apply -f kubernetes/mongodb.yaml
+	@kubectl wait --for=condition=Ready --timeout=600s pod --all
 	@echo "##### MongoDB OK! #####"
 
 consumer:
