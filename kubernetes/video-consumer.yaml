@@ -18,3 +18,10 @@ spec:
       - image: video-consumer:latest
         imagePullPolicy: IfNotPresent
         name: video-consumer
+        env:
+          - name: KAFKA_BOOTSTRAP_SERVERS
+            value: kafka-broker-service:29092
+          - name: KAFKA_TOPIC_NAME
+            value: streaming-video-classifier
+          - name: MONGODB_CONN_URI
+            value: mongodb://mongodb-service:27017
