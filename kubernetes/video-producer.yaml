@@ -18,3 +18,8 @@ spec:
       - image: video-producer:latest
         imagePullPolicy: IfNotPresent
         name: video-producer
+        env:
+          - name: KAFKA_BOOTSTRAP_SERVERS
+            value: kafka-broker-service:29092
+          - name: KAFKA_TOPIC_NAME
+            value: streaming-video-classifier

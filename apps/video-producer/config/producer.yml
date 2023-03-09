@@ -1,4 +1,3 @@
-bootstrap.servers: kafka-broker-service:29092
 enable.idempotence: True
 acks: all
 retries: 100
