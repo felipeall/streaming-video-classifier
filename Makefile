@@ -12,6 +12,7 @@ zookeeper:
 	@echo "####################################"
 	kubectl apply -f kubernetes/zookeeper.yaml
 	@echo "Waiting for 'Ready' condition..."
+	@sleep 15
 	@kubectl wait --for=condition=Ready --timeout=600s pod --all
 	@echo "##### Kafka Zookeeper OK! #####"
 
@@ -21,6 +22,7 @@ kafka:
 	@echo "#################################"
 	kubectl apply -f kubernetes/kafka-broker.yaml
 	@echo "Waiting for 'Ready' condition..."
+	@sleep 15
 	@kubectl wait --for=condition=Ready --timeout=600s pod --all
 	@echo "##### Kafka Broker OK! #####"
 
